@@ -28,7 +28,7 @@ jobs:
               "cmake esp-idf"
             )
 
-            RESOURCE_LARGE='["nrf", "imxrt"]'
+            RESOURCE_LARGE='["nrf", "imxrt", "kinetis_k"]'
 
             for e in "${BUILDSYSTEM_TOOLCHAIN[@]}"; do
               e_arr=($e)
@@ -42,7 +42,7 @@ jobs:
               FAMILY_LARGE=$(jq -n --argjson family "$FAMILY" --argjson resource "$RESOURCE_LARGE" '$family | map(select(IN($resource[])))')
               FAMILY=$(jq -n --argjson family "$FAMILY" --argjson resource "$RESOURCE_LARGE" '$family | map(select(IN($resource[]) | not))')
 
-              if [[ $toolchain == esp-idf ]]; then
+              if [[ "$toolchain" == "esp-idf" || "$toolchain" == "kinetis_k kinetis_kl kinetis_k32l2" ]]; then
                 echo "      - build-vm:" >> .circleci/config2.yml
               else
                 echo "      - build:" >> .circleci/config2.yml
