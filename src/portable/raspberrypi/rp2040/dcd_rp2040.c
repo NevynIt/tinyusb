@@ -53,6 +53,14 @@ static uint8_t* next_buffer_ptr;
 // USB_MAX_ENDPOINTS Endpoints, direction TUSB_DIR_OUT for out and TUSB_DIR_IN for in.
 static struct hw_endpoint hw_endpoints[USB_MAX_ENDPOINTS][2];
 
+struct hw_data_buf_cache_t
+{
+  uint size;
+  uint8_t *hw_data_buf;
+};
+
+static struct hw_data_buf_cache_t hw_data_buf_cache[USB_MAX_ENDPOINTS][2]; // cache the hw data buffer
+
 // SOF may be used by remote wakeup as RESUME, this indicate whether SOF is actually used by usbd
 static bool _sof_enable = false;
 
@@ -75,14 +83,26 @@ static void _hw_endpoint_alloc(struct hw_endpoint* ep, uint8_t transfer_type) {
     size *= 2u;
   }
 
+  struct hw_data_buf_cache_t *cached_buf = &hw_data_buf_cache[tu_edpt_number(ep->ep_addr)][tu_edpt_dir(ep->ep_addr)]; // NevinIT: get the cached hw data buffer
+  if (cached_buf->size == size)
+  {
+    ep->hw_data_buf = cached_buf->hw_data_buf;
+    pico_info("  Reusing %d bytes at offset 0x%x (0x%p)\r\n", size, hw_data_offset(ep->hw_data_buf), ep->hw_data_buf);
+  }
+  else
+  {
+
   ep->hw_data_buf = next_buffer_ptr;
   next_buffer_ptr += size;
 
-  assert(((uintptr_t) next_buffer_ptr & 0b111111u) == 0);
+    assert(((uintptr_t)next_buffer_ptr & 0b111111u) == 0);
+    hard_assert(hw_data_offset(next_buffer_ptr) <= USB_DPRAM_MAX);
+  }
   uint dpram_offset = hw_data_offset(ep->hw_data_buf);
-  hard_assert(hw_data_offset(next_buffer_ptr) <= USB_DPRAM_MAX);
 
   pico_info("  Allocated %d bytes at offset 0x%x (0x%p)\r\n", size, dpram_offset, ep->hw_data_buf);
+  cached_buf->hw_data_buf = ep->hw_data_buf; // NevinIT: cache the hw data buffer
+  cached_buf->size = size;                   // NevinIT: cache the size of the hw data buffer
 
   // Fill in endpoint control register with buffer offset
   uint32_t const reg = EP_CTRL_ENABLE_BITS | ((uint) transfer_type << EP_CTRL_BUFFER_TYPE_LSB) | dpram_offset;
@@ -110,6 +130,7 @@ static void _hw_endpoint_close(struct hw_endpoint* ep) {
   }
   if (reclaim_buffers) {
     next_buffer_ptr = &usb_dpram->epx_data[0];
+    tu_memclr(hw_data_buf_cache, sizeof(hw_data_buf_cache)); // nevinIT: clear the cache of the hw data buffer
   }
 }
 
