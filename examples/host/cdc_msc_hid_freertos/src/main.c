@@ -30,7 +30,7 @@
 #include "bsp/board_api.h"
 #include "tusb.h"
 
-#if TUP_MCU_ESPRESSIF
+#if TUSB_MCU_VENDOR_ESPRESSIF
   // ESP-IDF need "freertos/" prefix in include path.
   // CFG_TUSB_OS_INC_PATH should be defined accordingly.
   #include "freertos/FreeRTOS.h"
@@ -107,14 +107,14 @@ int main(void) {
   xTimerStart(blinky_tm, 0);
 
   // skip starting scheduler (and return) for ESP32-S2 or ESP32-S3
-#if !TUP_MCU_ESPRESSIF
+#if !TUSB_MCU_VENDOR_ESPRESSIF
   vTaskStartScheduler();
 #endif
 
   return 0;
 }
 
-#if TUP_MCU_ESPRESSIF
+#if TUSB_MCU_VENDOR_ESPRESSIF
 void app_main(void) {
   main();
 }
@@ -126,7 +126,12 @@ static void usb_host_task(void *param) {
   (void) param;
 
   // init host stack on configured roothub port
-  if (!tuh_init(BOARD_TUH_RHPORT)) {
+  tusb_rhport_init_t host_init = {
+    .role = TUSB_ROLE_HOST,
+    .speed = TUSB_SPEED_AUTO
+  };
+
+  if (!tusb_init(BOARD_TUH_RHPORT, &host_init)) {
     printf("Failed to init USB Host Stack\r\n");
     vTaskSuspend(NULL);
   }

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 import sys
 import subprocess
@@ -120,6 +121,9 @@ deps_optional = {
     'hw/mcu/st/cmsis_device_wb': ['https://github.com/STMicroelectronics/cmsis_device_wb.git',
                                   '9c5d1920dd9fabbe2548e10561d63db829bb744f',
                                   'stm32wb'],
+    'hw/mcu/st/stm32-mfxstm32l152': ['https://github.com/STMicroelectronics/stm32-mfxstm32l152.git',
+                                     '7f4389efee9c6a655b55e5df3fceef5586b35f9b',
+                                     'stm32h7'],
     'hw/mcu/st/stm32f0xx_hal_driver': ['https://github.com/STMicroelectronics/stm32f0xx_hal_driver.git',
                                        '0e95cd88657030f640a11e690a8a5186c7712ea5',
                                        'stm32f0'],
@@ -251,6 +255,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('families', nargs='*', default=[], help='Families to fetch')
     parser.add_argument('-b', '--board', action='append', default=[], help='Boards to fetch')
+    parser.add_argument('-f1', '--build-flags-on', action='append', default=[], help='Have no effect')
     parser.add_argument('--print', action='store_true', help='Print commit hash only')
     args = parser.parse_args()
 
